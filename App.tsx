@@ -1,96 +1,211 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { HeroWidget } from './components/HeroWidget';
-import { SessionTimerWidget } from './components/SessionTimerWidget';
-import { PrayerTimesWidget } from './components/PrayerTimesWidget';
 import { AyahWidget, AyahWidgetHandle } from './components/AyahWidget';
-import { JokeWidget } from './components/JokeWidget';
-import { QuranPlayerWidget } from './components/QuranPlayerWidget';
-import { TodoWidget } from './components/TodoWidget';
+import { NewsWidget } from './components/NewsWidget';
+import { TaskFocusWidget } from './components/TaskFocusWidget';
+import { SpiritualityWidget } from './components/SpiritualityWidget';
 import { BentoItem } from './components/BentoItem';
-import { Moon, Smile, BookOpen, Music, CheckSquare, Timer, Globe, RefreshCcw } from 'lucide-react';
+import { ThemeSwitcher } from './components/ThemeSwitcher';
+import { AtmosphericBackground } from './components/AtmosphericBackground';
+import { useTheme } from './ThemeContext';
+import { fetchWeather } from './services/api';
+import { Moon, BookOpen, CheckSquare, Globe, RefreshCcw, Newspaper, Link2 } from 'lucide-react';
+import { QuickLinksWidget } from './components/QuickLinksWidget';
 
 const App: React.FC = () => {
   const ayahWidgetRef = useRef<AyahWidgetHandle>(null);
+  const { theme } = useTheme();
+  const [weatherCode, setWeatherCode] = useState(0);
+  const [isSpiritualityFullscreen, setIsSpiritualityFullscreen] = useState(false);
+
+  useEffect(() => {
+    const loadWeather = async () => {
+      const data = await fetchWeather();
+      setWeatherCode(data.weatherCode);
+    };
+    loadWeather();
+    const interval = setInterval(loadWeather, 1800000); // 30 mins
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div
       className="relative w-screen h-[100vh] flex flex-col items-center justify-center p-4 md:p-6 overflow-hidden"
       style={{
-        backgroundImage: 'url("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop")',
+        backgroundImage: theme.background,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
-      {/* Dark Overlay for readability */}
-      <div className="absolute inset-0 bg-black/40" />
+      {/* Animated Gradient Layer */}
+      {theme.gradientAnimation && (
+        <div
+          className="absolute inset-0 animate-gradient"
+          style={{
+            background: theme.gradientAnimation,
+            backgroundSize: '400% 400%',
+            opacity: 0.3,
+          }}
+        />
+      )}
+
+      {/* Atmospheric Background Effects */}
+      <AtmosphericBackground weatherCode={weatherCode} />
+
+      {/* Overlay for readability */}
+      <div className="absolute inset-0" style={{ backgroundColor: theme.overlay }} />
+
+      {/* Theme Switcher */}
+      <ThemeSwitcher />
 
       {/* Main Content Container - Flex Column */}
       <div className="relative z-10 w-full max-w-[1920px] h-full flex flex-col gap-4">
 
-        {/* Top Section: Grid for Widgets (Flex-1 to take available space) */}
-        <div className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-4 flex-1 min-h-0">
-          {/* Top Left: Todo List (1x1) */}
-          <BentoItem title="My Tasks" icon={<CheckSquare size={14} />}>
-            <TodoWidget />
-          </BentoItem>
-
-          {/* Top Middle (2 Columns): Hero Section (Time + Weather) */}
-          <BentoItem className="md:col-span-2">
-            <HeroWidget />
-          </BentoItem>
-
-          {/* Right Column: Prayer Times (1x2) */}
-          <BentoItem className="md:col-span-1 md:row-span-2" title="Prayer Times" icon={<Moon size={14} />}>
-            <PrayerTimesWidget />
-          </BentoItem>
-
-          {/* Middle Row Left: Jokes (1x1) */}
-          <BentoItem title="Daily Humor" icon={<Smile size={14} />}>
-            <JokeWidget />
-          </BentoItem>
-
-          {/* Middle Row Center: Session Timer (1x1) */}
-          <BentoItem title="Focus Session" icon={<Timer size={14} />} className="bg-black/40 border-emerald-500/50">
-            <SessionTimerWidget />
-          </BentoItem>
-
-          {/* Row 2 Col 3: Quran Player (1x1) */}
-          <BentoItem title="Audio Quran" icon={<Music size={14} />}>
-            <QuranPlayerWidget />
-          </BentoItem>
-        </div>
-
-        {/* Bottom Section: Ayah Widget (Fixed Height or Relative) */}
-        <div className="relative w-full h-[25vh] min-h-[180px]">
-          <BentoItem className="w-full h-full border-emerald-500/30 bg-emerald-950/20" title="Verse of the Moment" icon={<BookOpen size={14} />} allowOverflow={true}>
-            <AyahWidget ref={ayahWidgetRef} />
-          </BentoItem>
-
-          {/* Control buttons positioned absolutely over the BentoItem */}
-          <div className="absolute top-6 right-6 flex items-center gap-2 z-50">
-            {/* English Toggle Button */}
-            <button
-              onClick={() => ayahWidgetRef.current?.toggleEnglishOnly()}
-              className={`p-2 transition-all rounded-full backdrop-blur-sm ${ayahWidgetRef.current?.englishOnly
-                ? 'bg-emerald-500/20 text-emerald-400'
-                : 'bg-black/10 text-white/40 hover:text-emerald-400'
-                }`}
-              title={ayahWidgetRef.current?.englishOnly ? "Show Arabic + English" : "English Only"}
-            >
-              <Globe size={16} />
-            </button>
-
-            {/* Next Verse Button */}
-            <button
-              onClick={() => ayahWidgetRef.current?.refreshAyah()}
-              className="p-2 text-white/40 hover:text-emerald-400 transition-colors bg-black/10 rounded-full backdrop-blur-sm"
-              title="Next Verse"
-              disabled={ayahWidgetRef.current?.loading}
-            >
-              <RefreshCcw size={16} className={`transition-transform duration-700 ${ayahWidgetRef.current?.loading ? 'animate-spin' : ''}`} />
-            </button>
+        {/* Fullscreen Spirituality Hub */}
+        {isSpiritualityFullscreen ? (
+          <div className="flex-1 min-h-0">
+            <BentoItem className="h-full" title="Spirituality Hub" icon={<Moon size={14} />}>
+              <SpiritualityWidget
+                isFullscreen={isSpiritualityFullscreen}
+                onToggleFullscreen={() => setIsSpiritualityFullscreen(false)}
+              />
+            </BentoItem>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* DESKTOP: Grid Layout (hidden on mobile) */}
+            <div className="hidden md:grid grid-cols-4 grid-rows-2 gap-4 flex-1 min-h-0">
+
+              {/* Row 1, Col 1: Task & Focus (1x1) */}
+              <BentoItem title="Tasks & Focus" icon={<CheckSquare size={14} />}>
+                <TaskFocusWidget />
+              </BentoItem>
+
+              {/* Row 1, Col 2-3: Hero Section (2x1) */}
+              <BentoItem className="col-span-2">
+                <HeroWidget />
+              </BentoItem>
+
+              {/* Row 1-2, Col 4: Spirituality Hub (1x2) - Spans both rows */}
+              <BentoItem className="col-span-1 row-span-2" title="Spirituality Hub" icon={<Moon size={14} />}>
+                <SpiritualityWidget
+                  isFullscreen={isSpiritualityFullscreen}
+                  onToggleFullscreen={() => setIsSpiritualityFullscreen(true)}
+                />
+              </BentoItem>
+
+              {/* Row 2, Col 1: News Headlines (1x1) */}
+              <BentoItem title="Live Headlines" icon={<Newspaper size={14} />}>
+                <NewsWidget />
+              </BentoItem>
+
+              {/* Row 2, Col 2-3: Quick Links (2x1) */}
+              <BentoItem className="col-span-2" title="Quick Links" icon={<Link2 size={14} />}>
+                <QuickLinksWidget />
+              </BentoItem>
+
+            </div>
+
+            {/* MOBILE: Vertical Scroll Layout (visible on mobile only) */}
+            <div className="md:hidden flex-1 overflow-y-auto no-scrollbar space-y-4 pb-4">
+
+              {/* Hero Widget */}
+              <div className="min-h-[200px]">
+                <BentoItem className="h-full">
+                  <HeroWidget />
+                </BentoItem>
+              </div>
+
+              {/* Quick Links */}
+              <div className="min-h-[120px]">
+                <BentoItem title="Quick Links" icon={<Link2 size={14} />} className="h-full">
+                  <QuickLinksWidget />
+                </BentoItem>
+              </div>
+
+              {/* Tasks & Focus */}
+              <div className="min-h-[300px]">
+                <BentoItem title="Tasks & Focus" icon={<CheckSquare size={14} />} className="h-full">
+                  <TaskFocusWidget />
+                </BentoItem>
+              </div>
+
+              {/* Spirituality Hub */}
+              <div className="min-h-[400px]">
+                <BentoItem title="Spirituality Hub" icon={<Moon size={14} />} className="h-full">
+                  <SpiritualityWidget
+                    isFullscreen={isSpiritualityFullscreen}
+                    onToggleFullscreen={() => setIsSpiritualityFullscreen(true)}
+                  />
+                </BentoItem>
+              </div>
+
+              {/* News Headlines */}
+              <div className="min-h-[250px]">
+                <BentoItem title="Live Headlines" icon={<Newspaper size={14} />} className="h-full">
+                  <NewsWidget />
+                </BentoItem>
+              </div>
+
+              {/* Verse of the Moment */}
+              <div className="min-h-[250px]">
+                <BentoItem
+                  title="Verse of the Moment"
+                  icon={<BookOpen size={14} />}
+                  allowOverflow={true}
+                  className="h-full"
+                >
+                  <AyahWidget ref={ayahWidgetRef} />
+                </BentoItem>
+              </div>
+
+            </div>
+
+            {/* Bottom Section: Ayah Widget (Desktop only) */}
+            <div className="hidden md:block relative w-full h-[25vh] min-h-[180px]">
+              <BentoItem
+                className="w-full h-full"
+                style={{
+                  borderColor: theme.primary + '50',
+                  backgroundColor: theme.cardBg,
+                }}
+                title="Verse of the Moment"
+                icon={<BookOpen size={14} />}
+                allowOverflow={true}
+              >
+                <AyahWidget ref={ayahWidgetRef} />
+              </BentoItem>
+
+              {/* Control buttons positioned absolutely over the BentoItem */}
+              <div className="absolute top-6 right-6 flex items-center gap-2 z-50">
+                <button
+                  onClick={() => ayahWidgetRef.current?.toggleEnglishOnly()}
+                  className="p-2 transition-all rounded-full backdrop-blur-sm"
+                  style={{
+                    backgroundColor: ayahWidgetRef.current?.englishOnly ? theme.primary + '33' : theme.cardBg,
+                    color: ayahWidgetRef.current?.englishOnly ? theme.primary : theme.text.muted,
+                  }}
+                  title={ayahWidgetRef.current?.englishOnly ? "Show Arabic + English" : "English Only"}
+                >
+                  <Globe size={16} />
+                </button>
+
+                <button
+                  onClick={() => ayahWidgetRef.current?.refreshAyah()}
+                  className="p-2 transition-all rounded-full backdrop-blur-sm"
+                  style={{
+                    backgroundColor: theme.cardBg,
+                    color: theme.text.muted,
+                  }}
+                  title="Next Verse"
+                  disabled={ayahWidgetRef.current?.loading}
+                >
+                  <RefreshCcw size={16} className={`transition-transform duration-700 ${ayahWidgetRef.current?.loading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
 
       </div>
     </div>

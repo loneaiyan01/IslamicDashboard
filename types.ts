@@ -30,6 +30,15 @@ export interface JokeData {
   punchline: string;
 }
 
+export type NewsTopic = 'tech' | 'ai' | 'world';
+
+export interface NewsItem {
+  title: string;
+  url: string;
+  source: string;
+  time?: string;
+}
+
 export interface BentoItemProps {
   children: React.ReactNode;
   className?: string;

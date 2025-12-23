@@ -1,4 +1,4 @@
-import { WeatherData, PrayerTimes, AyahData, JokeData } from '../types';
+import { WeatherData, PrayerTimes, AyahData, JokeData, NewsTopic, NewsItem } from '../types';
 
 // Default Location: Srinagar, India
 const LAT = 34.0837;
@@ -50,13 +50,13 @@ export const fetchRandomAyah = async (): Promise<AyahData | null> => {
     // We REMOVE custom headers (Cache-Control, Pragma) to avoid CORS preflight issues
     const timestamp = new Date().getTime();
     const response = await fetch(`https://api.alquran.cloud/v1/ayah/random/editions/quran-uthmani,en.hilali?_t=${timestamp}`);
-    
+
     if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     // The API returns an array of editions in the order requested
     const arabicEdition = data.data[0];
     const englishEdition = data.data[1];
@@ -73,13 +73,45 @@ export const fetchRandomAyah = async (): Promise<AyahData | null> => {
   }
 };
 
-export const fetchRandomJoke = async (): Promise<JokeData | null> => {
+export const fetchNews = async (topic: NewsTopic): Promise<NewsItem[]> => {
   try {
-    const response = await fetch(`https://official-joke-api.appspot.com/random_joke`);
+    let url = '';
+
+    if (topic === 'ai') {
+      // Use rss2json to fetch AI News
+      // Feed: https://www.artificialintelligence-news.com/feed/
+      url = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.artificialintelligence-news.com%2Ffeed%2F';
+    } else if (topic === 'tech') {
+      // Saurav.tech NewsAPI - Tech
+      url = 'https://saurav.tech/NewsAPI/top-headlines/category/technology/us.json';
+    } else {
+      // Saurav.tech NewsAPI - World (General)
+      url = 'https://saurav.tech/NewsAPI/top-headlines/category/general/us.json';
+    }
+
+    const response = await fetch(url);
     const data = await response.json();
-    return data;
+
+    if (topic === 'ai') {
+      // Transform RSS2JSON format
+      return data.items.map((item: any) => ({
+        title: item.title,
+        url: item.link,
+        source: 'AI News',
+        time: item.pubDate
+      })).slice(0, 5);
+    } else {
+      // Transform NewsAPI format
+      return data.articles.map((item: any) => ({
+        title: item.title,
+        url: item.url,
+        source: item.source.name,
+        time: item.publishedAt
+      })).slice(0, 5);
+    }
+
   } catch (error) {
-    console.error("Failed to fetch Joke", error);
-    return null;
+    console.error(`Failed to fetch ${topic} news`, error);
+    return [];
   }
 };
