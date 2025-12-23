@@ -1,0 +1,5 @@
+{
+  "name": "Smart TV Dashboard",
+  "description": "A modern, aesthetic dashboard for smart TVs featuring clock, weather, prayer times, jokes, and Quranic verses in a bento grid layout.",
+  "requestFramePermissions": []
+}
